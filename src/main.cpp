@@ -1,6 +1,8 @@
 #include "global.h"
 #include "dht_anomaly_model.h"
 
+
+
 #include <TensorFlowLite_ESP32.h>
 #include "tensorflow/lite/micro/all_ops_resolver.h"
 #include "tensorflow/lite/micro/micro_error_reporter.h"
@@ -11,6 +13,7 @@
 #include "led_blinky.h"
 #include "neo_blinky.h"
 #include "temp_humi_monitor.h"
+#include "mainserver.h"
 
 
 // Globals, for the convenience of one-shot setup.
@@ -27,6 +30,12 @@ uint8_t tensor_arena[kTensorArenaSize];
 
 void setup() {
   Serial.begin(115200);
+
+  startAP();
+  setupServer();
+
+
+
   Serial.println("TensorFlow Lite Init....");
   static tflite::MicroErrorReporter micro_error_reporter;
   error_reporter = &micro_error_reporter;
@@ -57,11 +66,16 @@ void setup() {
   xTaskCreate( led_blinky, "Task LED Blink" ,2048  ,NULL  ,2 , NULL);
   xTaskCreate( neo_blinky, "Task NEO Blink" ,2048  ,NULL  ,2 , NULL);
   xTaskCreate( temp_humi_monitor, "Task TEMP HUMI Monitor" ,2048  ,NULL  ,2 , NULL);
-  
+  xTaskCreate( main_server_task, "Task Main Server" ,2048  ,NULL  ,2 , NULL);
 }
 
 void loop() {
   
+  
+  
+  
+  
+  /*
   // Prepare input data (e.g., sensor readings)
   // For a simple example, let's assume a single float input
   input->data.f[0] = 20.5; 
@@ -80,5 +94,8 @@ void loop() {
   Serial.println(result);
 
   delay(5000); 
+  */
+
+
 
 }
