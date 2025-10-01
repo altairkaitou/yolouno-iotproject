@@ -1,2 +1,3 @@
 #include "global.h"
-int glob_var = 0;
+float glob_temperature = 0;
+float glob_humidity = 0;

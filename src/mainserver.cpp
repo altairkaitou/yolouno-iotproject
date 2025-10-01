@@ -8,7 +8,7 @@ bool isAPMode = true;
 
 WebServer server(80);
 
-String ssid = "ESP32-AP123456789";
+String ssid = "ESP32-YOUR NETWORK HERE!!!";
 String password = "12345678";
 String wifi_ssid = "";
 String wifi_password = "";
@@ -17,8 +17,8 @@ unsigned long connect_start_ms = 0;
 bool connecting = false;
 
 String mainPage() {
-  float temperature = 10;
-  float humidity = 20;
+  float temperature = glob_temperature;
+  float humidity = glob_temperature;
   String led1 = led1_state ? "ON" : "OFF";
   String led2 = led2_state ? "ON" : "OFF";
 
@@ -112,16 +112,22 @@ void handleRoot() { server.send(200, "text/html", mainPage()); }
 
 void handleToggle() {
   int led = server.arg("led").toInt();
-  if (led == 1) led1_state = !led1_state;
-  else if (led == 2) led2_state = !led2_state;
+  if (led == 1) {
+    led1_state = !led1_state;
+    Serial.println("YOUR CODE TO CONTROL LED1");
+  }
+  else if (led == 2){
+    led2_state = !led2_state;
+    Serial.println("YOUR CODE TO CONTROL LED2");
+  }
   server.send(200, "application/json",
     "{\"led1\":\"" + String(led1_state ? "ON":"OFF") +
     "\",\"led2\":\"" + String(led2_state ? "ON":"OFF") + "\"}");
 }
 
 void handleSensors() {
-  float t = 10;
-  float h = 20;
+  float t = glob_temperature;
+  float h = glob_humidity;
   String json = "{\"temp\":"+String(t)+",\"hum\":"+String(h)+"}";
   server.send(200, "application/json", json);
 }
@@ -177,7 +183,7 @@ void main_server_task(void *pvParameters){
   while(1){
     server.handleClient();
 
-    // Nếu nhấn BOOT thì về AP mode
+    // BOOT Button to switch to AP Mode
     if (digitalRead(BOOT_PIN) == LOW) {
       vTaskDelay(100);
       if (digitalRead(BOOT_PIN) == LOW) {
@@ -188,7 +194,7 @@ void main_server_task(void *pvParameters){
       }
     }
 
-    // Nếu đang connect STA
+    // STA Mode
     if (connecting) {
       if (WiFi.status() == WL_CONNECTED) {
         Serial.print("STA IP address: ");

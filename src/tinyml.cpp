@@ -49,8 +49,8 @@ void tiny_ml_task(void *pvParameters){
        
         // Prepare input data (e.g., sensor readings)
         // For a simple example, let's assume a single float input
-        input->data.f[0] = 20.5; 
-        input->data.f[1] = 80.5; 
+        input->data.f[0] = glob_temperature; 
+        input->data.f[1] = glob_humidity; 
 
         // Run inference
         TfLiteStatus invoke_status = interpreter->Invoke();
@@ -61,8 +61,8 @@ void tiny_ml_task(void *pvParameters){
 
         // Get and process output
         float result = output->data.f[0];
-        //Serial.print("Inference result: ");
-        //Serial.println(result);
+        Serial.print("Inference result: ");
+        Serial.println(result);
 
         vTaskDelay(5000); 
     }

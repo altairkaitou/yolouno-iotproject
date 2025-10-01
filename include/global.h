@@ -1,6 +1,7 @@
 #ifndef __GLOBAL_H__
 #define __GLOBAL_H__
 
-extern int glob_var;
+extern float glob_temperature;
+extern float glob_humidity;
 
 #endif
