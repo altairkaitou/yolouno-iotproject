@@ -1,46 +1,42 @@
 #include "temp_humi_monitor.h"
-DHT20 dht20;
-LiquidCrystal_I2C lcd(33,16,2);
-
+#include "global.h"
 
 void temp_humi_monitor(void *pvParameters){
 
-    Wire.begin(11, 12);
     Serial.begin(115200);
-    dht20.begin();
+
+    static float fakeTemp = 20;   
+    static float fakeHumi = 30;   // start at low humidity
 
     while (1){
-        /* code */
-        
-        dht20.read();
-        // Reading temperature in Celsius
-        float temperature = dht20.getTemperature();
-        // Reading humidity
-        float humidity = dht20.getHumidity();
 
-        
+        // ===== FAKE SENSOR MODE =====
 
-        // Check if any reads failed and exit early
-        if (isnan(temperature) || isnan(humidity)) {
-            Serial.println("Failed to read from DHT sensor!");
-            temperature = humidity =  -1;
-            //return;
-        }
+        // Fake Temperature: 20 → 40 → reset
+        fakeTemp += 1;
+        if (fakeTemp > 40) fakeTemp = 20;
 
-        //Update global variables for temperature and humidity
+        // Fake Humidity: 30 → 80 → reset
+        fakeHumi += 10;
+        if (fakeHumi > 80) fakeHumi = 30;
+
+        float temperature = fakeTemp;
+        float humidity = fakeHumi;
+
+        // ===== Update global variables =====
         glob_temperature = temperature;
         glob_humidity = humidity;
 
-        // Print the results
-        
-        Serial.print("Humidity: ");
+        // ===== Serial log =====
+        Serial.print("[FAKE SENSOR] Humi: ");
         Serial.print(humidity);
-        Serial.print("%  Temperature: ");
-        Serial.print(temperature);
-        Serial.println("°C");
+        Serial.print("%  Temp: ");
+        Serial.println(temperature);
 
-        xSemaphoreGive(tempSemaphore);
-        vTaskDelay(2000);
+        // ===== Notify LED + NeoPixel Tasks =====
+        xSemaphoreGive(tempSemaphore);       // Task 1 (Temp)
+        xSemaphoreGive(humiditySemaphore);   // Task 2 (Humidity)
+
+        vTaskDelay(5000);   // update every 5s
     }
-    
 }

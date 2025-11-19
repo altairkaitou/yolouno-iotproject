@@ -3,6 +3,8 @@ float glob_temperature = 0;
 float glob_humidity = 0;
 
 SemaphoreHandle_t tempSemaphore = NULL;
+SemaphoreHandle_t humiditySemaphore = NULL;
+
 
 
 

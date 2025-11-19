@@ -9,6 +9,7 @@
 extern float glob_temperature;
 extern float glob_humidity;
 extern SemaphoreHandle_t tempSemaphore;
+extern SemaphoreHandle_t humiditySemaphore;
 
 extern String WIFI_SSID;
 extern String WIFI_PASS;
