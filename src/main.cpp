@@ -40,8 +40,8 @@ if (humiditySemaphore == NULL) {
   //xTaskCreate(led_blinky, "Task LED Blink", 2048, NULL, 2, NULL);
   //xTaskCreate(neo_blinky, "Task NEO Blink", 2048, NULL, 2, NULL);
   xTaskCreate(neo_blinky_humidity, "Neo Humidity", 4096, NULL, 2, NULL);
+  xTaskCreate(led_blinky_temp, "Task LED Temp", 4096, NULL, 2, NULL);
   xTaskCreate(temp_humi_monitor, "Task TEMP HUMI Monitor", 2048, NULL, 2, NULL);
-  //xTaskCreate(led_blinky_temp, "Task LED Temp", 4096, NULL, 2, NULL);
   // xTaskCreate(main_server_task, "Task Main Server" ,8192  ,NULL  ,2 , NULL);
   // xTaskCreate( tiny_ml_task, "Tiny ML Task" ,2048  ,NULL  ,2 , NULL);
   xTaskCreate(coreiot_task, "CoreIOT Task" ,4096  ,NULL  ,2 , NULL);
