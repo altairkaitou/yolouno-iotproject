@@ -40,6 +40,7 @@ void temp_humi_monitor(void *pvParameters){
         Serial.println("°C");
 
         xSemaphoreGive(tempSemaphore);
+        xSemaphoreGive(humiditySemaphore); 
         vTaskDelay(2000);
     }
     
