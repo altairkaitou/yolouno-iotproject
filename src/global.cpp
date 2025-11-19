@@ -2,6 +2,10 @@
 float glob_temperature = 0;
 float glob_humidity = 0;
 
+SemaphoreHandle_t tempSemaphore = NULL;
+
+
+
 String WIFI_SSID;
 String WIFI_PASS;
 String CORE_IOT_TOKEN;

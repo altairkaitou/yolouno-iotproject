@@ -38,8 +38,9 @@ void temp_humi_monitor(void *pvParameters){
         Serial.print("%  Temperature: ");
         Serial.print(temperature);
         Serial.println("°C");
-        
-        vTaskDelay(5000);
+
+        xSemaphoreGive(tempSemaphore);
+        vTaskDelay(2000);
     }
     
 }
