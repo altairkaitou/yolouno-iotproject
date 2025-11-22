@@ -106,25 +106,35 @@ void setup_coreiot(){
 
 }
 
-void coreiot_task(void *pvParameters){
-
+void coreiot_task(void *pvParameters)
+{
     setup_coreiot();
 
-    while(1){
+    SensorPacket pkt;
 
+    while (1)
+    {
         if (!client.connected()) {
             reconnect();
         }
+
         client.loop();
 
-        // Sample payload, publish to 'v1/devices/me/telemetry'
-        String payload = "{\"temperature\":" + String(glob_temperature) +  ",\"humidity\":" + String(glob_humidity) + "}";
-        
-        client.publish("v1/devices/me/telemetry", payload.c_str());
+        // Nhận sensor qua queue
+        if (xQueueReceive(sensorQueue, &pkt, 0) == pdTRUE)
+        {
+            float temp = pkt.temperature;
+            float humi = pkt.humidity;
 
+            String payload = 
+                "{\"temperature\":" + String(temp) +
+                ",\"humidity\":"    + String(humi) + "}";
 
-        
-        Serial.println("Published payload: " + payload);
-        vTaskDelay(10000);  // Publish every 10 seconds
+            client.publish("v1/devices/me/telemetry", payload.c_str());
+
+            Serial.println("Published payload: " + payload);
+        }
+
+        vTaskDelay(pdMS_TO_TICKS(10000));
     }
 }
