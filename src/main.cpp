@@ -24,6 +24,9 @@ void setup()
 
   Wire.begin(11, 12);
 
+  //Turn on AP Mode
+  startAP();
+
 
   // ============== Create Semaphore ========= TASK 1 //
    tempSemaphore = xSemaphoreCreateBinary();
@@ -44,6 +47,7 @@ if (humiditySemaphore == NULL) {
   // Task 3: Create Queue
   // Queue length = 5 packets, each packet = SensorPacket struct
   // ============================
+  
   sensorQueue = xQueueCreate(5, sizeof(SensorPacket));
   if (sensorQueue == NULL)
   {
@@ -52,7 +56,7 @@ if (humiditySemaphore == NULL) {
   }
 
   // Task 3: Create 3 Semaphores
-
+  sensorDataMutex = xSemaphoreCreateMutex();
   normalSemaphore   = xSemaphoreCreateBinary();
   warningSemaphore  = xSemaphoreCreateBinary();
   criticalSemaphore = xSemaphoreCreateBinary();

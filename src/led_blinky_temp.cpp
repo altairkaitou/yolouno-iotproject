@@ -46,7 +46,15 @@ void led_blinky_temp(void *pvParameters) {
         // Chờ tín hiệu
         if (xSemaphoreTake(tempSemaphore, portMAX_DELAY) == pdTRUE) {
 
-            float t = lastTemp;   // lấy từ cache (không dùng queue)
+            // float t = lastTemp;   // lấy từ cache (không dùng queue)
+
+
+            float t = 0.0f;
+
+            if (xSemaphoreTake(sensorDataMutex, portMAX_DELAY) == pdTRUE) {
+                t = latestData.temperature;
+                xSemaphoreGive(sensorDataMutex);
+            }
 
             if (t < 25.0f) {
                 slowBlink();

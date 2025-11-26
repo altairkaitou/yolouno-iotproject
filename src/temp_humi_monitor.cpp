@@ -1,5 +1,6 @@
 #include "temp_humi_monitor.h"
 #include "global.h"
+#include "task_webserver.h"
 
 DHT20 dht20;
 
@@ -18,8 +19,8 @@ void temp_humi_monitor(void *pvParameters){
         dht20.read();
         float temperature = dht20.getTemperature();
         float humidity    = dht20.getHumidity();
-        lastTemp = temperature;
-        lastHumi = humidity;
+        // lastTemp = temperature;
+        // lastHumi = humidity;
 
         // ===== Check for error =====
         if (isnan(temperature) || isnan(humidity)) {
@@ -38,6 +39,13 @@ void temp_humi_monitor(void *pvParameters){
         packet.humidity    = humidity;
 
         xQueueSend(sensorQueue, &packet, 0);
+
+        
+        if (xSemaphoreTake(sensorDataMutex, portMAX_DELAY) == pdTRUE) {
+            latestData.temperature = temperature;
+            latestData.humidity = humidity;
+            xSemaphoreGive(sensorDataMutex);
+        }
 
          // =============================
         // Task 3: Determine state (Option C)
@@ -70,6 +78,9 @@ void temp_humi_monitor(void *pvParameters){
         Serial.print("%  Temp: ");
         Serial.println(temperature);
 
+
+        // After reading sensor data:
+        // sendGaugeData(temperature, humidity);
 
         // ===== Notify Tasks =====
         xSemaphoreGive(tempSemaphore);       // Task 1 (LED Temp)

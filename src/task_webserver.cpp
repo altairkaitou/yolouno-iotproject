@@ -1,9 +1,29 @@
 #include "task_webserver.h"
+#include "global.h"
 
 AsyncWebServer server(80);
 AsyncWebSocket ws("/ws");
 
 bool webserver_isrunning = false;
+
+
+// ==============================
+// GPIO for Task 4
+// ==============================
+#define LED1_PIN 47
+#define LED2_PIN 46
+
+
+void initTask4Pins() {
+    pinMode(LED1_PIN, OUTPUT);
+    pinMode(LED2_PIN, OUTPUT);
+    digitalWrite(LED1_PIN, LOW);
+    digitalWrite(LED2_PIN, LOW);
+}
+
+
+
+
 
 void Webserver_sendata(String data)
 {
@@ -17,6 +37,19 @@ void Webserver_sendata(String data)
         Serial.println("⚠️ Không có client WebSocket nào đang kết nối!");
     }
 }
+
+
+// ==============================
+// SEND GAUGE DATA TO WEB
+// ==============================
+void sendGaugeData(float temp, float humi)
+{
+    String json = "{\"temp\":" + String(temp, 1) +
+                  ",\"humi\":" + String(humi, 1) + "}";
+
+    Webserver_sendata(json);
+}
+
 
 void onEvent(AsyncWebSocket *server, AsyncWebSocketClient *client, AwsEventType type, void *arg, uint8_t *data, size_t len)
 {
@@ -52,6 +85,36 @@ void connnectWSV()
               { request->send(LittleFS, "/script.js", "application/javascript"); });
     server.on("/styles.css", HTTP_GET, [](AsyncWebServerRequest *request)
               { request->send(LittleFS, "/styles.css", "text/css"); });
+
+
+    // =======================================
+    // LED1 CONTROL ROUTES
+    // =======================================
+
+    server.on("/led1/on", HTTP_GET, [](AsyncWebServerRequest *req){
+        digitalWrite(LED1_PIN, HIGH);
+        req->send(200, "text/plain", "LED1 ON");
+    });
+
+    server.on("/led1/off", HTTP_GET, [](AsyncWebServerRequest *req){
+        digitalWrite(LED1_PIN, LOW);
+        req->send(200, "text/plain", "LED1 OFF");
+    });
+
+
+    // =======================================
+    // LED2 CONTROL ROUTES
+    // =======================================
+    server.on("/led2/on", HTTP_GET, [](AsyncWebServerRequest *req){
+        digitalWrite(LED2_PIN, HIGH);
+        req->send(200, "text/plain", "LED2 ON");
+    });
+
+    server.on("/led2/off", HTTP_GET, [](AsyncWebServerRequest *req){
+        digitalWrite(LED2_PIN, LOW);
+        req->send(200, "text/plain", "LED2 OFF");
+    });
+
     server.begin();
     ElegantOTA.begin(&server);
     webserver_isrunning = true;

@@ -61,6 +61,18 @@
         <p>Quản lý và điều khiển các relay được kết nối.</p>
       </header>
 
+      <div class="device-block">
+        <h2>LED 1 (GPIO 47)</h2>
+        <button onclick="fetch('/led1/on')">Bật</button>
+        <button onclick="fetch('/led1/off')">Tắt</button>
+      </div>
+
+      <div class="device-block">
+        <h2>LED 2 (GPIO 46)</h2>
+        <button onclick="fetch('/led2/on')">Bật</button>
+        <button onclick="fetch('/led2/off')">Tắt</button>
+      </div>
+
       <div class="device-list" id="relayContainer"></div>
 
       <button class="add-relay-btn" onclick="openAddRelayDialog()">

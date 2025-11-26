@@ -5,8 +5,8 @@
 SemaphoreHandle_t tempSemaphore = NULL;
 SemaphoreHandle_t humiditySemaphore = NULL;
 
-float lastTemp = 0;
-float lastHumi = 0;
+// float lastTemp = 0;
+// float lastHumi = 0;
 
 
 String WIFI_SSID;
@@ -32,3 +32,5 @@ QueueHandle_t sensorQueue = NULL;
 SemaphoreHandle_t normalSemaphore   = NULL;
 SemaphoreHandle_t warningSemaphore  = NULL;
 SemaphoreHandle_t criticalSemaphore = NULL;
+LatestSensorData latestData;
+SemaphoreHandle_t sensorDataMutex = NULL;

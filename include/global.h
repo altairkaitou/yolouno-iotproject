@@ -11,8 +11,8 @@
 //extern float glob_humidity;
 extern SemaphoreHandle_t tempSemaphore;
 extern SemaphoreHandle_t humiditySemaphore;
-extern float lastTemp;
-extern float lastHumi;
+// extern float lastTemp;
+// extern float lastHumi;
 
 extern String WIFI_SSID;
 extern String WIFI_PASS;
@@ -33,6 +33,16 @@ typedef struct {
     float humidity;
 } SensorPacket;
 
+
+
+typedef struct {
+    float temperature;
+    float humidity;
+} LatestSensorData;
+
+
+extern LatestSensorData latestData;
+extern SemaphoreHandle_t sensorDataMutex;
 // Queue for transferring SensorPacket from sensor task to LCD task
 extern QueueHandle_t sensorQueue;
 
