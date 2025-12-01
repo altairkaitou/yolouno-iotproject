@@ -1,6 +1,5 @@
 #include "temp_humi_monitor.h"
 #include "global.h"
-#include "task_webserver.h"
 
 DHT20 dht20;
 
@@ -14,14 +13,13 @@ void temp_humi_monitor(void *pvParameters){
     
 
     while (1){
-
+        Serial.println("Reading DHT20 sensor...");
         // ===== Read DHT20 real sensor =====
         dht20.read();
         float temperature = dht20.getTemperature();
         float humidity    = dht20.getHumidity();
-        // lastTemp = temperature;
-        // lastHumi = humidity;
-
+        // float temperature = 30;
+        // float humidity    = 80;
         // ===== Check for error =====
         if (isnan(temperature) || isnan(humidity)) {
             Serial.println("Failed to read from DHT20 sensor!");
@@ -40,13 +38,13 @@ void temp_humi_monitor(void *pvParameters){
 
         xQueueSend(sensorQueue, &packet, 0);
 
-        
+
+
         if (xSemaphoreTake(sensorDataMutex, portMAX_DELAY) == pdTRUE) {
             latestData.temperature = temperature;
             latestData.humidity = humidity;
             xSemaphoreGive(sensorDataMutex);
         }
-
          // =============================
         // Task 3: Determine state (Option C)
         // =============================
@@ -59,28 +57,25 @@ void temp_humi_monitor(void *pvParameters){
         if (stateNormal)
         {
             xSemaphoreGive(normalSemaphore);
-            Serial.println("[SensorTask] NORMAL state triggered");
+            //Serial.println("[SensorTask] NORMAL state triggered");
         }
         else if (stateWarning)
         {
             xSemaphoreGive(warningSemaphore);
-            Serial.println("[SensorTask] WARNING state triggered");
+            //Serial.println("[SensorTask] WARNING state triggered");
         }
         else if (stateCritical)
         {
             xSemaphoreGive(criticalSemaphore);
-            Serial.println("[SensorTask] CRITICAL state triggered");
+            //Serial.println("[SensorTask] CRITICAL state triggered");
         }
 
         // ===== Serial Debug =====
-        Serial.print("[REAL SENSOR] Humi: ");
-        Serial.print(humidity);
-        Serial.print("%  Temp: ");
-        Serial.println(temperature);
+        // Serial.print("[REAL SENSOR] Humi: ");
+        // Serial.print(humidity);
+        // Serial.print("%  Temp: ");
+        // Serial.println(temperature);
 
-
-        // After reading sensor data:
-        // sendGaugeData(temperature, humidity);
 
         // ===== Notify Tasks =====
         xSemaphoreGive(tempSemaphore);       // Task 1 (LED Temp)

@@ -3,7 +3,7 @@
 #include "led_blinky.h"
 #include "neo_blinky.h"
 #include "temp_humi_monitor.h"
-// #include "mainserver.h"
+#include "mainserver.h"
 // #include "tinyml.h"
 #include "coreiot.h"
 
@@ -20,12 +20,12 @@
 void setup()
 {
   Serial.begin(115200);
+
+  
+
+
   check_info_File(0);
-
   Wire.begin(11, 12);
-
-  //Turn on AP Mode
-  startAP();
 
 
   // ============== Create Semaphore ========= TASK 1 //
@@ -47,7 +47,6 @@ if (humiditySemaphore == NULL) {
   // Task 3: Create Queue
   // Queue length = 5 packets, each packet = SensorPacket struct
   // ============================
-  
   sensorQueue = xQueueCreate(5, sizeof(SensorPacket));
   if (sensorQueue == NULL)
   {
@@ -69,15 +68,23 @@ if (humiditySemaphore == NULL) {
 
   //xTaskCreate(led_blinky, "Task LED Blink", 2048, NULL, 2, NULL);
   //xTaskCreate(neo_blinky, "Task NEO Blink", 2048, NULL, 2, NULL);
-  xTaskCreate(neo_blinky_humidity, "Neo Humidity", 4096, NULL, 2, NULL);
-  xTaskCreate(led_blinky_temp, "Task LED Temp", 4096, NULL, 2, NULL);
+  //xTaskCreate(neo_blinky_humidity, "Neo Humidity", 4096, NULL, 2, NULL);
+  //xTaskCreate(led_blinky_temp, "Task LED Temp", 4096, NULL, 2, NULL);
   xTaskCreate(lcd_display_task, "LCD Display", 4096, NULL, 2, NULL);
   xTaskCreate(temp_humi_monitor, "Task TEMP HUMI Monitor", 2048, NULL, 2, NULL);
-  // xTaskCreate(main_server_task, "Task Main Server" ,8192  ,NULL  ,2 , NULL);
+  //xTaskCreate(main_server_task, "Task Main Server" ,8192  ,NULL  ,2 , NULL);
   // xTaskCreate( tiny_ml_task, "Tiny ML Task" ,2048  ,NULL  ,2 , NULL);
   xTaskCreate(coreiot_task, "CoreIOT Task" ,4096  ,NULL  ,2 , NULL);
+  xTaskCreate(
+    websocket_send_task,    // Tên hàm Task
+    "WS Send",              // Tên mô tả Task (Dễ Debug)
+    4096,                   // Kích thước Stack (bytes) - Đủ cho việc xử lý JSON và WebSocket
+    NULL,                   // Tham số truyền vào Task (không dùng nên là NULL)
+    2,                      // Ưu tiên Task (Priority) - 2 là mức ưu tiên trung bình
+    NULL                    // Task Handle (không cần dùng)
+);
   // xTaskCreate(Task_Toogle_BOOT, "Task_Toogle_BOOT", 4096, NULL, 2, NULL);
-
+  //xTaskCreate(websocket_send_task, "WS Send", 4096, NULL, 2, NULL);
 }
 
 void loop()

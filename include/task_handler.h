@@ -4,6 +4,9 @@
 
 #include <ArduinoJson.h>
 #include <task_check_info.h>
+#include <Arduino.h>
+#include <Adafruit_NeoPixel.h>
+
 
 extern void handleWebSocketMessage(String message);
 #endif

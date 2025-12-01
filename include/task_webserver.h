@@ -11,10 +11,11 @@
 
 extern AsyncWebServer server;
 extern AsyncWebSocket ws;
-
+extern SemaphoreHandle_t xBinarySemaphoreInternet; 
+extern LatestSensorData latestData;
+extern SemaphoreHandle_t sensorDataMutex; // Biến Mutex bảo vệ data
 void Webserver_stop();
 void Webserver_reconnect();
 void Webserver_sendata(String data);
-void sendGaugeData(float t, float h);
-
+void websocket_send_task(void *pvParameters);
 #endif

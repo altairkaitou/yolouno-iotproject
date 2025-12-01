@@ -2,11 +2,15 @@
 var gateway = `ws://${window.location.hostname}/ws`;
 var websocket;
 
+
+let gaugeTemp; 
+let gaugeHumi; 
+
+
 window.addEventListener('load', onLoad);
 
 function onLoad(event) {
     initWebSocket();
-    initGauges();
 }
 
 function onOpen(event) {
@@ -40,13 +44,18 @@ function onMessage(event) {
     console.log("📩 Nhận:", event.data);
     try {
         var data = JSON.parse(event.data);
-
-
-         if (data.temp !== undefined && data.humi !== undefined) {
-            gaugeTemp.refresh(data.temp);
-            gaugeHumi.refresh(data.humi);
-        }
         // Có thể thêm xử lý riêng nếu cần (ví dụ cập nhật trạng thái)
+        if (data.page === "sensor" && data.value) {
+            const temp = parseFloat(data.value.temperature);
+            const humi = parseFloat(data.value.humidity);
+
+            if (!isNaN(temp) && gaugeTemp) {
+                gaugeTemp.refresh(temp.toFixed(1));
+            }
+            if (!isNaN(humi) && gaugeHumi) {
+                gaugeHumi.refresh(humi.toFixed(1));
+            }
+        }
     } catch (e) {
         console.warn("Không phải JSON hợp lệ:", event.data);
     }
@@ -66,12 +75,11 @@ function showSection(id, event) {
 
 
 // ==================== HOME GAUGES ====================
-let gaugeTemp, gaugeHumi;
-
-function initGauges() {
+window.onload = function () {
+    initWebSocket();
     gaugeTemp = new JustGage({
         id: "gauge_temp",
-        value: 25,
+        value: 26,
         min: -10,
         max: 50,
         donut: true,
@@ -79,7 +87,12 @@ function initGauges() {
         gaugeWidthScale: 0.25,
         gaugeColor: "transparent",
         levelColorsGradient: true,
-        levelColors: ["#00BCD4", "#4CAF50", "#FFC107", "#F44336"]
+        levelColors: ["#00BCD4", "#4CAF50", "#FFC107", "#F44336"],
+        startAnimationTime: 1000,
+        refreshAnimationTime: 600,
+        relativeGaugeSize: true,
+        hideMinMax: true,
+        counter: true
     });
 
     gaugeHumi = new JustGage({
@@ -92,9 +105,19 @@ function initGauges() {
         gaugeWidthScale: 0.25,
         gaugeColor: "transparent",
         levelColorsGradient: true,
-        levelColors: ["#42A5F5", "#00BCD4", "#0288D1"]
+        levelColors: ["#42A5F5", "#00BCD4", "#0288D1"],
+        startAnimationTime: 1000,
+        refreshAnimationTime: 600,
+        relativeGaugeSize: true,
+        hideMinMax: true,
+        counter: true
     });
-}
+
+    // setInterval(() => {
+    //     gaugeTemp.refresh(Math.floor(Math.random() * 15) + 20);
+    //     gaugeHumi.refresh(Math.floor(Math.random() * 40) + 40);
+    // }, 3000);
+};
 
 
 // ==================== DEVICE FUNCTIONS ====================

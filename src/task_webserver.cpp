@@ -1,29 +1,9 @@
 #include "task_webserver.h"
-#include "global.h"
 
 AsyncWebServer server(80);
 AsyncWebSocket ws("/ws");
 
 bool webserver_isrunning = false;
-
-
-// ==============================
-// GPIO for Task 4
-// ==============================
-#define LED1_PIN 47
-#define LED2_PIN 46
-
-
-void initTask4Pins() {
-    pinMode(LED1_PIN, OUTPUT);
-    pinMode(LED2_PIN, OUTPUT);
-    digitalWrite(LED1_PIN, LOW);
-    digitalWrite(LED2_PIN, LOW);
-}
-
-
-
-
 
 void Webserver_sendata(String data)
 {
@@ -37,20 +17,51 @@ void Webserver_sendata(String data)
         Serial.println("⚠️ Không có client WebSocket nào đang kết nối!");
     }
 }
+String getSensorJSON() {
+    float currentTemp = 0.0f;
+    float currentHumi = 0.0f;
 
+    // Lấy Mutex để truy cập dữ liệu an toàn
+    if (xSemaphoreTake(sensorDataMutex, pdMS_TO_TICKS(10)) == pdTRUE) {
+        currentTemp = latestData.temperature;
+        currentHumi = latestData.humidity;
+        xSemaphoreGive(sensorDataMutex);
+    } else {
+        // Trả về rỗng nếu không lấy được khóa (để tránh lỗi)
+        Serial.println("⚠️ [WS] Không lấy được Mutex khi đọc sensor!");
+        return ""; 
+    }
 
-// ==============================
-// SEND GAUGE DATA TO WEB
-// ==============================
-void sendGaugeData(float temp, float humi)
-{
-    String json = "{\"temp\":" + String(temp, 1) +
-                  ",\"humi\":" + String(humi, 1) + "}";
-
-    Webserver_sendata(json);
+    // Đóng gói JSON theo format Frontend mong đợi: 
+    // {"page":"sensor", "value":{"temperature":X, "humidity":Y}}
+    StaticJsonDocument<128> doc;
+    doc["page"] = "sensor";
+    doc["value"]["temperature"] = serialized(String(currentTemp, 1)); 
+    doc["value"]["humidity"] = serialized(String(currentHumi, 1));
+    
+    String payload;
+    serializeJson(doc, payload);
+    return payload;
 }
 
+// ✅ TASK GỬI DỮ LIỆU ĐỊNH KỲ
+void websocket_send_task(void *pvParameters) {
+    Serial.println("🌐 [WS Task] Đang chờ kết nối Internet...");
+    // Chặn Task cho đến khi Wifi kết nối thành công lần đầu
+    // xSemaphoreTake(xBinarySemaphoreInternet, portMAX_DELAY);
+    // xSemaphoreGive(xBinarySemaphoreInternet); 
 
+    while (1) {
+        // Chỉ gửi nếu có client và WebServer đang chạy
+        // if (webserver_isrunning && ws.count() > 0) {
+            String sensorData = getSensorJSON();
+            if (sensorData.length() > 0) {
+                 Webserver_sendata(sensorData);
+            }
+        // }
+        vTaskDelay(pdMS_TO_TICKS(2000)); // Gửi mỗi 2 giây
+    }
+}
 void onEvent(AsyncWebSocket *server, AsyncWebSocketClient *client, AwsEventType type, void *arg, uint8_t *data, size_t len)
 {
     if (type == WS_EVT_CONNECT)
@@ -85,36 +96,13 @@ void connnectWSV()
               { request->send(LittleFS, "/script.js", "application/javascript"); });
     server.on("/styles.css", HTTP_GET, [](AsyncWebServerRequest *request)
               { request->send(LittleFS, "/styles.css", "text/css"); });
+              
 
+    server.on("/raphael.min.js", HTTP_GET, [](AsyncWebServerRequest *request)
+              { request->send(LittleFS, "/raphael.min.js", "application/javascript"); });
 
-    // =======================================
-    // LED1 CONTROL ROUTES
-    // =======================================
-
-    server.on("/led1/on", HTTP_GET, [](AsyncWebServerRequest *req){
-        digitalWrite(LED1_PIN, HIGH);
-        req->send(200, "text/plain", "LED1 ON");
-    });
-
-    server.on("/led1/off", HTTP_GET, [](AsyncWebServerRequest *req){
-        digitalWrite(LED1_PIN, LOW);
-        req->send(200, "text/plain", "LED1 OFF");
-    });
-
-
-    // =======================================
-    // LED2 CONTROL ROUTES
-    // =======================================
-    server.on("/led2/on", HTTP_GET, [](AsyncWebServerRequest *req){
-        digitalWrite(LED2_PIN, HIGH);
-        req->send(200, "text/plain", "LED2 ON");
-    });
-
-    server.on("/led2/off", HTTP_GET, [](AsyncWebServerRequest *req){
-        digitalWrite(LED2_PIN, LOW);
-        req->send(200, "text/plain", "LED2 OFF");
-    });
-
+    server.on("/justgage.min.js", HTTP_GET, [](AsyncWebServerRequest *request)
+              { request->send(LittleFS, "/justgage.min.js", "application/javascript"); });
     server.begin();
     ElegantOTA.begin(&server);
     webserver_isrunning = true;

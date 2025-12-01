@@ -1,7 +1,12 @@
 #include <task_handler.h>
-
 void handleWebSocketMessage(String message)
 {
+    Adafruit_NeoPixel strip(1, 45, NEO_GRB + NEO_KHZ800);
+    strip.begin();
+    // Set all pixels to off to start
+    strip.clear();
+    strip.show();
+
     Serial.println(message);
     StaticJsonDocument<256> doc;
 
@@ -27,13 +32,24 @@ void handleWebSocketMessage(String message)
         pinMode(gpio, OUTPUT);
         if (status.equalsIgnoreCase("ON"))
         {
-            digitalWrite(gpio, HIGH);
-            Serial.printf("🔆 GPIO %d ON\n", gpio);
+            if (gpio==45) {
+                strip.setPixelColor(0, strip.Color(255, 0, 0));
+                strip.show();
+            } else {
+                digitalWrite(gpio, HIGH);
+                Serial.printf("🔆 GPIO %d ON\n", gpio);
+                }
         }
         else if (status.equalsIgnoreCase("OFF"))
         {
-            digitalWrite(gpio, LOW);
-            Serial.printf("💤 GPIO %d OFF\n", gpio);
+           if (gpio==45) {
+                strip.setPixelColor(0, strip.Color(0, 0, 0));
+                strip.show();
+            } else {
+                digitalWrite(gpio, LOW);
+                Serial.printf("💤 GPIO %d OFF\n", gpio);
+            }
+            
         }
     }
     else if (doc["page"] == "setting")

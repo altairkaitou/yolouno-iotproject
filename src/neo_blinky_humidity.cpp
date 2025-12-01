@@ -20,8 +20,8 @@ void neo_blinky_humidity(void *pvParameters) {
 
             float hum = packet.humidity;
 
-            Serial.print("[Neo] Humidity = ");
-            Serial.println(hum);
+            // Serial.print("[Neo] Humidity = ");
+            // Serial.println(hum);
 
             // Humidity → Color mapping (aligned with Task 3 states)
             if (hum < 70) {
