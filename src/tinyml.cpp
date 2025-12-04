@@ -54,8 +54,11 @@ void tiny_ml_task(void *pvParameters)
 
         // Prepare input data (e.g., sensor readings)
         // For a simple example, let's assume a single float input
-        input->data.f[0] = glob_temperature;
-        input->data.f[1] = glob_humidity;
+        if (xSemaphoreTake(sensorDataMutex, portMAX_DELAY) == pdTRUE) {
+            input->data.f[0] = latestData.temperature;
+            input->data.f[1] = latestData.humidity;
+            xSemaphoreGive(sensorDataMutex);
+        }
 
         // Run inference
         TfLiteStatus invoke_status = interpreter->Invoke();

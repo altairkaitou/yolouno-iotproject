@@ -1,6 +1,7 @@
 #include "temp_humi_monitor.h"
+#include "global.h"
+
 DHT20 dht20;
-LiquidCrystal_I2C lcd(33,16,2);
 
 
 void temp_humi_monitor(void *pvParameters){
@@ -9,39 +10,85 @@ void temp_humi_monitor(void *pvParameters){
     Serial.begin(115200);
     dht20.begin();
 
+    
+
     while (1){
-        /* code */
-        
+        // ===== Read DHT20 real sensor =====
         dht20.read();
-        // Reading temperature in Celsius
         float temperature = dht20.getTemperature();
-        // Reading humidity
-        float humidity = dht20.getHumidity();
-
-        
-
-        // Check if any reads failed and exit early
+        float humidity    = dht20.getHumidity();
+        // float temperature = 30;
+        // float humidity    = 80;
+        // ===== Check for error =====
         if (isnan(temperature) || isnan(humidity)) {
-            Serial.println("Failed to read from DHT sensor!");
-            temperature = humidity =  -1;
-            //return;
+            Serial.println("Failed to read from DHT20 sensor!");
+            temperature = humidity = -1;
         }
 
-        //Update global variables for temperature and humidity
-        glob_temperature = temperature;
-        glob_humidity = humidity;
 
-        // Print the results
-        
-        Serial.print("Humidity: ");
-        Serial.print(humidity);
-        Serial.print("%  Temperature: ");
-        Serial.print(temperature);
-        Serial.println("°C");
 
-        xSemaphoreGive(tempSemaphore);
-        xSemaphoreGive(humiditySemaphore); 
-        vTaskDelay(2000);
+
+         // =============================
+        // Task 3: Send SensorPacket via Queue
+        // =============================
+        SensorPacket packet;
+        packet.temperature = temperature;
+        packet.humidity    = humidity;
+
+        xQueueSend(sensorQueue, &packet, 0);
+
+
+
+        if (xSemaphoreTake(sensorDataMutex, portMAX_DELAY) == pdTRUE) {
+            latestData.temperature = temperature;
+            latestData.humidity = humidity;
+            xSemaphoreGive(sensorDataMutex);
+        }
+         // =============================
+        // Task 3: Determine state (Option C)
+        // =============================
+        bool stateNormal   = (temperature < 30 && humidity < 70);
+        bool stateWarning  = ((temperature >= 30 && temperature < 40) ||
+                              (humidity >= 70 && humidity < 85));
+        bool stateCritical = (temperature >= 40 || humidity >= 85);
+
+        // Raise semaphore based on state
+        if (stateNormal)
+        {
+            xSemaphoreGive(normalSemaphore);
+            //Serial.println("[SensorTask] NORMAL state triggered");
+        }
+        else if (stateWarning)
+        {
+            xSemaphoreGive(warningSemaphore);
+            //Serial.println("[SensorTask] WARNING state triggered");
+        }
+        else if (stateCritical)
+        {
+            xSemaphoreGive(criticalSemaphore);
+            //Serial.println("[SensorTask] CRITICAL state triggered");
+        }
+
+        // ===== Serial Debug =====
+        // Serial.print("[REAL SENSOR] Humi: ");
+        // Serial.print(humidity);
+        // Serial.print("%  Temp: ");
+        // Serial.println(temperature);
+        // ===== Serial Debug =====
+        // int tempInt = (int)temperature;
+        // int humiInt = (int)humidity;
+
+        // Serial.print(tempInt);
+        // Serial.print(",");
+        // Serial.print(humiInt);
+        // Serial.print(",");
+        // Serial.println(1);   // xuống dòng tự động sau println
+
+
+        // ===== Notify Tasks =====
+        xSemaphoreGive(tempSemaphore);       // Task 1 (LED Temp)
+        xSemaphoreGive(humiditySemaphore);   // Task 2 (NeoPixel Humi)
+
+        vTaskDelay(pdMS_TO_TICKS(1000));     // Sensor read period
     }
-    
 }

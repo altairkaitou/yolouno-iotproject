@@ -1,8 +1,8 @@
 #include "coreiot.h"
 
 // ----------- CONFIGURE THESE! -----------
-const char* coreIOT_Server = "10.235.76.226";  
-const char* coreIOT_Token = "g7drm1amhd3dchr379xu";   // Device Access Token
+const char* coreIOT_Server = "app.coreiot.io";  
+const char* coreIOT_Token = "tranmanhtai";   // Device Access Token
 const int   mqttPort = 1883;
 // ----------------------------------------
 
@@ -15,7 +15,7 @@ void reconnect() {
   while (!client.connected()) {
     Serial.print("Attempting MQTT connection...");
     // Attempt to connect (username=token, password=empty)
-    //if (client.connect("ESP32Client", coreIOT_Token, NULL)) {
+    client.connect("ESP32Client", coreIOT_Token, NULL);
     String clientId = "ESP32Client-";
     clientId += String(random(0xffff), HEX);
 
@@ -36,9 +36,13 @@ void reconnect() {
 
 
 void callback(char* topic, byte* payload, unsigned int length) {
+  String topicStr = String(topic);
   Serial.print("Message arrived [");
   Serial.print(topic);
   Serial.println("] ");
+  pinMode(48, OUTPUT); //Mở pin điều khiển LED
+  Adafruit_NeoPixel strip(1, 45, NEO_GRB + NEO_KHZ800); //Mở điều khiển đèn NEO
+  strip.begin();
 
   // Allocate a temporary buffer for the message
   char message[length + 1];
@@ -58,21 +62,87 @@ void callback(char* topic, byte* payload, unsigned int length) {
   }
 
   const char* method = doc["method"];
-  if (strcmp(method, "setStateLED") == 0) {
-    // Check params type (could be boolean, int, or string according to your RPC)
-    // Example: {"method": "setValueLED", "params": "ON"}
-    const char* params = doc["params"];
+  String methodName = String(method);
 
-    if (strcmp(params, "ON") == 0) {
-      Serial.println("Device turned ON.");
-      //TODO
+  //Xử lý các lệnh được gửi từ server
+  
+  // Lệnh lấy trạng thái LED
+  if (methodName == "getLEDState") {
+    Serial.println("Server asking for LED state...");
+    
+    String requestId = topicStr.substring(26); 
+    
+    String responseTopic = "v1/devices/me/rpc/response/" + requestId;
+    
+    String responsePayload = LEDState ? "true" : "false"; 
+
+    lastSentLEDState = LEDState;  // Cập nhật trạng thái đã gửi
+
+    client.publish(responseTopic.c_str(), responsePayload.c_str());
+    Serial.println("Replying to " + responseTopic + " with " + responsePayload);
+  }
+  // Lệnh điều khiển LED
+  else if (strcmp(method, "setLEDState") == 0) {
+    
+    bool params = doc["params"]; 
+
+    if (params == true) {
+      Serial.println(">> COMMAND: Device LED turned ON");
+      digitalWrite(48, HIGH);
+      LEDState = true;
+      
+      
+      client.publish("v1/devices/me/attributes", "{\"led\": true}");
 
     } else {   
-      Serial.println("Device turned OFF.");
-      //TODO
-
+      Serial.println(">> COMMAND: Device LED turned OFF");
+      digitalWrite(48, LOW);
+      LEDState = false;
+      
+      client.publish("v1/devices/me/attributes", "{\"led\": false}");
     }
-  } else {
+  } 
+  // Lệnh lấy trạng thái đèn NEO
+  else if (methodName == "getNEOState") {
+    Serial.println("Server asking for NEO state...");
+    
+    
+    String requestId = topicStr.substring(26); 
+    
+    
+    String responseTopic = "v1/devices/me/rpc/response/" + requestId;
+    
+    
+    String responsePayload = NEOState ? "true" : "false"; 
+    lastSentNEOState = NEOState;  // Cập nhật trạng thái đã gửi
+
+  
+    client.publish(responseTopic.c_str(), responsePayload.c_str());
+    Serial.println("Replying to " + responseTopic + " with " + responsePayload);
+  }
+  // Lệnh điều khiển đèn NEO
+  else if (strcmp(method, "setNEOState") == 0) {
+    
+    bool params = doc["params"]; 
+
+    if (params == true) {
+      Serial.println(">> COMMAND: Device NEO turned ON");
+      strip.setPixelColor(0, strip.Color(255, 0, 0));
+      strip.show();
+      NEOState = true;
+      
+      client.publish("v1/devices/me/attributes", "{\"neo\": true}");
+
+    } else {   
+      Serial.println(">> COMMAND: Device NEO turned OFF");
+      strip.setPixelColor(0, strip.Color(0, 0, 0));
+      strip.show();
+      NEOState = false;
+    
+      client.publish("v1/devices/me/attributes", "{\"neo\": false}");
+    }
+  } 
+   else {
     Serial.print("Unknown method: ");
     Serial.println(method);
   }
@@ -116,15 +186,33 @@ void coreiot_task(void *pvParameters){
             reconnect();
         }
         client.loop();
+        float currentTemp = 0.0;
+        float currentHumi = 0.0;
+        
+        if (lastSentLEDState != LEDState) {
+            // Gửi cập nhật trạng thái LED nếu có thay đổi
+            if (LEDState) {
+                client.publish("v1/devices/me/attributes", "{\"value\": true}");
+            } else {
+                client.publish("v1/devices/me/attributes", "{\"value\": false}");
+            }
+            lastSentLEDState = LEDState;  // Cập nhật trạng thái đã gửi
+            Serial.println("Published LED state: " + String(LEDState));
+        }
 
+        if (xSemaphoreTake(sensorDataMutex, pdMS_TO_TICKS(10)) == pdTRUE) {
+        currentTemp = latestData.temperature;
+        currentHumi = latestData.humidity;
+        xSemaphoreGive(sensorDataMutex);
+        }
         // Sample payload, publish to 'v1/devices/me/telemetry'
-        String payload = "{\"temperature\":" + String(glob_temperature) +  ",\"humidity\":" + String(glob_humidity) + "}";
+        String payload = "{\"temperature\":" + String(currentTemp) +  ",\"humidity\":" + String(currentHumi) + "}";
         
         client.publish("v1/devices/me/telemetry", payload.c_str());
 
 
         
-        Serial.println("Published payload: " + payload);
-        vTaskDelay(10000);  // Publish every 10 seconds
+        //Serial.println("Published payload: " + payload);
+        vTaskDelay(1000);  // Publish every 10 seconds
     }
 }

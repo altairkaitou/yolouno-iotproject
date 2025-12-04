@@ -6,7 +6,7 @@
 #include "global.h"
 #include <PubSubClient.h>
 #include <ArduinoJson.h>
-
+#include <Adafruit_NeoPixel.h>
 
 void coreiot_task(void *pvParameters);
 

@@ -2,10 +2,19 @@
 var gateway = `ws://${window.location.hostname}/ws`;
 var websocket;
 
+let relayList = [];
+let gaugeTemp; 
+let gaugeHumi; 
+
+
 window.addEventListener('load', onLoad);
 
 function onLoad(event) {
     initWebSocket();
+    relayList.push({ id: Date.now(), name: "LED", gpio: "48", state: false });
+    relayList.push({ id: Date.now()+1, name: "NEO", gpio: "45", state: false });
+    renderRelays();
+
 }
 
 function onOpen(event) {
@@ -40,6 +49,17 @@ function onMessage(event) {
     try {
         var data = JSON.parse(event.data);
         // Có thể thêm xử lý riêng nếu cần (ví dụ cập nhật trạng thái)
+        if (data.page === "sensor" && data.value) {
+            const temp = parseFloat(data.value.temperature);
+            const humi = parseFloat(data.value.humidity);
+
+            if (!isNaN(temp) && gaugeTemp) {
+                gaugeTemp.refresh(temp.toFixed(1));
+            }
+            if (!isNaN(humi) && gaugeHumi) {
+                gaugeHumi.refresh(humi.toFixed(1));
+            }
+        }
     } catch (e) {
         console.warn("Không phải JSON hợp lệ:", event.data);
     }
@@ -47,7 +67,7 @@ function onMessage(event) {
 
 
 // ==================== UI NAVIGATION ====================
-let relayList = [];
+
 let deleteTarget = null;
 
 function showSection(id, event) {
@@ -60,7 +80,8 @@ function showSection(id, event) {
 
 // ==================== HOME GAUGES ====================
 window.onload = function () {
-    const gaugeTemp = new JustGage({
+    initWebSocket();
+    gaugeTemp = new JustGage({
         id: "gauge_temp",
         value: 26,
         min: -10,
@@ -70,10 +91,15 @@ window.onload = function () {
         gaugeWidthScale: 0.25,
         gaugeColor: "transparent",
         levelColorsGradient: true,
-        levelColors: ["#00BCD4", "#4CAF50", "#FFC107", "#F44336"]
+        levelColors: ["#00BCD4", "#4CAF50", "#FFC107", "#F44336"],
+        startAnimationTime: 1000,
+        refreshAnimationTime: 600,
+        relativeGaugeSize: true,
+        hideMinMax: true,
+        counter: true
     });
 
-    const gaugeHumi = new JustGage({
+    gaugeHumi = new JustGage({
         id: "gauge_humi",
         value: 60,
         min: 0,
@@ -83,13 +109,18 @@ window.onload = function () {
         gaugeWidthScale: 0.25,
         gaugeColor: "transparent",
         levelColorsGradient: true,
-        levelColors: ["#42A5F5", "#00BCD4", "#0288D1"]
+        levelColors: ["#42A5F5", "#00BCD4", "#0288D1"],
+        startAnimationTime: 1000,
+        refreshAnimationTime: 600,
+        relativeGaugeSize: true,
+        hideMinMax: true,
+        counter: true
     });
 
-    setInterval(() => {
-        gaugeTemp.refresh(Math.floor(Math.random() * 15) + 20);
-        gaugeHumi.refresh(Math.floor(Math.random() * 40) + 40);
-    }, 3000);
+    // setInterval(() => {
+    //     gaugeTemp.refresh(Math.floor(Math.random() * 15) + 20);
+    //     gaugeHumi.refresh(Math.floor(Math.random() * 40) + 40);
+    // }, 3000);
 };
 
 
